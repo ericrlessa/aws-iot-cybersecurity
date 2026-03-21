@@ -1,0 +1,52 @@
+infrastructure/modules/thing/certs/
+
+# Local .terraform directories
+.terraform/
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Crash logs
+crash.log
+
+# Exclude all .tfvars files (may contain secrets)
+*.tfvars
+*.tfvars.json
+
+# Ignore override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore CLI config files
+.terraformrc
+terraform.rc
+
+# Ignore lock file ONLY if you don't want to commit it
+# (usually you SHOULD keep this file)
+# .terraform.lock.hcl
+
+# Ignore plan output files
+*.tfplan
+
+# Ignore sensitive variable files
+*.auto.tfvars
+*.auto.tfvars.json
+
+# macOS / Linux junk
+.DS_Store
+*.swp
+
+# VS Code
+.vscode/
+
+# Python (if you mix Terraform + Python)
+__pycache__/
+*.pyc
+venv/
+.env
+
+# Logs
+*.log
