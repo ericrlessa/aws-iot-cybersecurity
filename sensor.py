@@ -14,6 +14,7 @@ sensor = adafruit_ahtx0.AHTx0(board.I2C())
 connection = get_connection('pi-aht20-client')
 
 ec2client = EC2MQTTClient()
+ec2client.connect()
 
 topic = "devices/iot-temperature-humidity-01/data"
 
