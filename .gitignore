@@ -1,5 +1,7 @@
 infrastructure/modules/thing/certs/
 
+*.pem
+
 # Local .terraform directories
 .terraform/
 

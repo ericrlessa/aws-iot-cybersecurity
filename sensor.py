@@ -3,6 +3,7 @@ import board
 import logging
 import adafruit_ahtx0
 from pubsub_aws_iot import publish, get_connection
+from mosquitto import EC2MQTTClient
 import json
 
 
@@ -11,6 +12,8 @@ logging.basicConfig(level=logging.DEBUG)
 sensor = adafruit_ahtx0.AHTx0(board.I2C())
 
 connection = get_connection('pi-aht20-client')
+
+ec2client = EC2MQTTClient()
 
 topic = "devices/iot-temperature-humidity-01/data"
 
@@ -31,6 +34,8 @@ while True:
 
         publish(connection, payload, topic)
         logging.info("Message published to AWS IoT Core.")
+
+        ec2client.publish(payload)
         
         time.sleep(5)
     except Exception as e:
