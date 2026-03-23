@@ -14,10 +14,11 @@ class EC2MQTTClient:
 
     def on_connect(self, client, userdata, flags, rc):
         logging.info("connected to mosquitto broker!")
+        logging.info(f"Connected to mosquitto broker: {MOSQUITTO_HOST}:{MOSQUITTO_PORT}")
         self.connected = True
 
     def connect(self):
-        logging.info("Starting connection to mosquitto broker...")
+        logging.info(f"Starting connection to mosquitto broker: {MOSQUITTO_HOST}:{MOSQUITTO_PORT}")
         self.client.connect(MOSQUITTO_HOST, MOSQUITTO_PORT)
         self.client.loop_start()
 
