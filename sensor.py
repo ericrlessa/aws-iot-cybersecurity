@@ -37,6 +37,7 @@ while True:
         logging.info("Message published to AWS IoT Core.")
 
         ec2client.publish(payload)
+        logging.info("Message published to Mosquitto broker.")
         
         time.sleep(5)
     except Exception as e:
