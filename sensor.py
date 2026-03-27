@@ -24,7 +24,7 @@ while True:
         humidity = sensor.relative_humidity
         
         logging.info(f"Temperature: {temperature:.2f}C")
-        logging.info(f"Humidity: {humidity:.2f}C")
+        logging.info(f"Humidity: {humidity:.2f}%")
         
         payload = json.dumps(
             {
