@@ -22,7 +22,7 @@ class EC2MQTTClient:
         self.client.connect(MOSQUITTO_HOST, MOSQUITTO_PORT)
         self.client.loop_start()
 
-    def publish(self, payload):
+    def publish(self, payload, topic=MOSQUITTO_TOPIC):
         if not self.connected:
             raise Exception("Not connected")
-        self.client.publish(MOSQUITTO_TOPIC, payload)
+        self.client.publish(topic, payload)
