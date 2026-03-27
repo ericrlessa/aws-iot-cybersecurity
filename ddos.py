@@ -32,5 +32,5 @@ def main():
             logging.error(f"Error reading sensor or publishing data: {e}")
             time.sleep(5) # Wait for a bit before retrying
 
-if __name__ == "main":
+if __name__ == "__main__":
     main()
