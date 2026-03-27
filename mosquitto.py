@@ -26,3 +26,7 @@ class EC2MQTTClient:
         if not self.connected:
             raise Exception("Not connected")
         self.client.publish(topic, payload)
+    
+    def is_connected(self):
+        return self.connected
+

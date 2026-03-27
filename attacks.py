@@ -60,6 +60,14 @@ def send_normal_data():
             time.sleep(5) # Wait for a bit before retrying
 
 def main():
+
+
+    while not ec2client.is_connected():
+        logging.debug("Waiting for connection to broker...")
+        time.sleep(2)
+    
+    logging.debug("Connected to the broker")
+
     Thread(target=send_normal_data).start() 
     Thread(target=send_ddos).start() 
     Thread(target=send_malformed).start() 
