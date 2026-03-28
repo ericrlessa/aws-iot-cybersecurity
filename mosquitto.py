@@ -27,6 +27,12 @@ class EC2MQTTClient:
             raise Exception("Not connected")
         self.client.publish(topic, payload)
     
+    def disconnect(self):
+        logging.info(f"Stopping connection to mosquitto broker: {MOSQUITTO_HOST}:{MOSQUITTO_PORT}")
+        self.connected = False
+        self.client.disconnect()
+        self.client.loop_stop()
+
     def is_connected(self):
         return self.connected
 
