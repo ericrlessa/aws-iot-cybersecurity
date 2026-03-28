@@ -71,10 +71,10 @@ resource "aws_instance" "mosquitto" {
             # -----------------------------
             # Install Suricata
             # -----------------------------
-            apt-get install -y suricata jq
-
-            # Update rules
-            suricata-update
+            sudo apt-get install software-properties-common -y
+            sudo add-apt-repository ppa:oisf/suricata-stable -y
+            sudo apt update -y
+            sudo apt install suricata jq -y
 
             # -----------------------------
             # Get interface
@@ -89,6 +89,7 @@ resource "aws_instance" "mosquitto" {
 
             # Update interface in af-packet section
             sed -i "s/interface: eth0/interface: $INTERFACE/g" /etc/suricata/suricata.yaml
+            sed -i "s/interface: eth2/interface: $INTERFACE/g" /etc/suricata/suricata.yaml
 
             # Ensure af-packet is used (uncomment if needed)
             sed -i 's/#- af-packet:/  - af-packet:/' /etc/suricata/suricata.yaml
@@ -99,26 +100,33 @@ resource "aws_instance" "mosquitto" {
             # -----------------------------
             # Add custom rules
             # -----------------------------
-            cat <<EOT > /etc/suricata/rules/local.rules
-            alert tcp any any -> \$HOME_NET 1883 (msg:"High MQTT Traffic Rate"; threshold: type both, track by_dst, count 500, seconds 60; sid:1000001;)
-            alert tcp any any -> \$HOME_NET 1883 (msg:"Large MQTT Packet"; dsize:>1024; sid:1000002;)
+            mkdir -p /var/lib/suricata/rules/
+
+            # Use 'EOT' with quotes to preserve $HOME_NET as a literal Suricata variable
+            cat <<'EOT' > /var/lib/suricata/rules/local.rules
+            alert tcp any any -> $HOME_NET 1883 (msg:"High MQTT Traffic Rate"; flow: stateless; threshold: type both, track by_dst, count 500, seconds 60; sid:1000001;)
+            alert tcp any any -> $HOME_NET 1883 (msg:"Large MQTT Packet"; dsize:>1024; sid:1000002;)
             EOT
 
-            # Set rule path and include local.rules
-            sed -i 's|default-rule-path: /var/lib/suricata/rules|default-rule-path: /etc/suricata/rules|' /etc/suricata/suricata.yaml
-            sed -i '/rule-files:/a\  - local.rules' /etc/suricata/suricata.yaml
+            # # Set rule path and include local.rules            
+            sed -i '/rule-files:/a\  - /var/lib/suricata/rules/local.rules' /etc/suricata/suricata.yaml
+
+            # Update rules
+            suricata-update
+            suricata-update enable-source et/open
 
             # -----------------------------
             # Start Suricata
             # -----------------------------
             systemctl enable suricata
-            systemctl restart suricata
+            systemctl start suricata
 
             # -----------------------------
             # Install Filebeat
             # -----------------------------
             curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-9.3.2-amd64.deb
             dpkg -i filebeat-9.3.2-amd64.deb || apt-get install -f -y
+            
 
             systemctl enable filebeat
             systemctl restart filebeat
