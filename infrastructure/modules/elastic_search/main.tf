@@ -58,29 +58,128 @@ resource "aws_instance" "elasticsearch" {
   key_name                    = var.key_name
   vpc_security_group_ids      = [aws_security_group.elasticsearch_sg.id]
   associate_public_ip_address = false
+  iam_instance_profile = aws_iam_instance_profile.elasticsearch_profile.name
+
 
   tags = {
     Name = "elasticsearch-node"
   }
 
   user_data = <<-EOF
-               #!/bin/bash
-               set -eux
+              #!/bin/bash
+              set -eux
 
-               apt-get update -y
+              apt-get update -y
 
-               wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
-               apt-get install apt-transport-https
-               echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/9.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-9.x.list
-               apt-get update -y && apt-get install elasticsearch -y
+              apt-get install -y awscli
 
-               sed -i 's/^#network.host:.*/network.host: 0.0.0.0/' /etc/elasticsearch/elasticsearch.yml
-               sed -i 's/^#transport.host:.*/transport.host: 0.0.0.0/' /etc/elasticsearch/elasticsearch.yml
+              wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
+              apt-get install apt-transport-https
+              echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/9.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-9.x.list
+              apt-get update -y && apt-get install elasticsearch -y
 
-               systemctl daemon-reload
-               systemctl enable elasticsearch.service
+              sed -i 's/^#network.host:.*/network.host: 0.0.0.0/' /etc/elasticsearch/elasticsearch.yml
+              sed -i 's/^#transport.host:.*/transport.host: 0.0.0.0/' /etc/elasticsearch/elasticsearch.yml
 
-               systemctl start elasticsearch.service
+              systemctl daemon-reload
+              systemctl enable elasticsearch.service
 
-               EOF
+              systemctl start elasticsearch.service
+
+              sleep 5
+
+              # Reset kibana_system password and capture it
+              KIBANA_PASSWORD=$(/usr/share/elasticsearch/bin/elasticsearch-reset-password -u kibana_system -b -s)
+
+              ELASTIC_PASSWORD=$(/usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -b -s)
+
+              # Check if secret exists, update if it does, create if it doesn't
+              if aws secretsmanager describe-secret --secret-id "elasticsearch/kibana_password" --region ${var.region} 2>/dev/null; then
+                  # Update existing secret
+                  aws secretsmanager update-secret \
+                      --secret-id "elasticsearch/kibana_password" \
+                      --secret-string "{\"username\":\"kibana_system\",\"password\":\"$KIBANA_PASSWORD\"}" \
+                      --region ${var.region}
+                  echo "Secret updated"
+              else
+                  # Create new secret
+                  aws secretsmanager create-secret \
+                      --name "elasticsearch/kibana_password" \
+                      --secret-string "{\"username\":\"kibana_system\",\"password\":\"$KIBANA_PASSWORD\"}" \
+                      --region ${var.region}
+                  echo "Secret created"
+              fi
+
+              # Check if secret exists, update if it does, create if it doesn't
+              if aws secretsmanager describe-secret --secret-id "elasticsearch/elastic_password" --region ${var.region} 2>/dev/null; then
+                  # Update existing secret
+                  aws secretsmanager update-secret \
+                      --secret-id "elasticsearch/elastic_password" \
+                      --secret-string "{\"username\":\"elastic\",\"password\":\"$ELASTIC_PASSWORD\"}" \
+                      --region ${var.region}
+                  echo "Secret updated"
+              else
+                  # Create new secret
+                  aws secretsmanager create-secret \
+                      --name "elasticsearch/elastic_password" \
+                      --secret-string "{\"username\":\"elastic\",\"password\":\"$ELASTIC_PASSWORD\"}" \
+                      --region ${var.region}
+                  echo "Secret created"
+              fi
+              
+              echo "Password stored in Secrets Manager"
+
+              EOF
+}
+
+
+# IAM Role for Elasticsearch instance
+resource "aws_iam_role" "elasticsearch_role" {
+  name = "elasticsearch-role"
+  
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# Minimal Secrets Manager policy (only create-secret)
+resource "aws_iam_policy" "elasticsearch_secrets" {
+  name        = "elasticsearch-secrets-policy"
+  description = "Allow Elasticsearch to create kibana_password secret"
+  
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:CreateSecret",
+          "secretsmanager:UpdateSecret",
+          "secretsmanager:DescribeSecret"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Attach the policy to the role
+resource "aws_iam_role_policy_attachment" "elasticsearch_secrets" {
+  role       = aws_iam_role.elasticsearch_role.name
+  policy_arn = aws_iam_policy.elasticsearch_secrets.arn
+}
+
+# IAM Instance Profile
+resource "aws_iam_instance_profile" "elasticsearch_profile" {
+  name = "elasticsearch-instance-profile"
+  role = aws_iam_role.elasticsearch_role.name
 }

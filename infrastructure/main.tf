@@ -6,6 +6,16 @@ provider "aws" {
       project = "IOT"
     }
   }
+  
+}
+
+terraform {
+  required_providers {
+    time = {
+      source = "hashicorp/time"
+      version = ">= 0.9.0"
+    }
+  }
 }
 
 terraform {
@@ -33,7 +43,7 @@ module "elasti_search" {
 
 module "kibana" {
   source = "./modules/kibana"
-  depends_on = [ module.vpc, module.elasti_search ]
+  depends_on = [ module.vpc, module.elasti_search, time_sleep.wait_for_elasticsearch ]
   elasticsearch_ip = module.elasti_search.elasticsearch_private_ip
   key_name = var.key_name
   public_subnet_id = module.vpc.public_subnet_ids[0]
@@ -47,4 +57,10 @@ module "mosquito" {
   elasticsearch_ip = module.elasti_search.elasticsearch_private_ip
   public_subnet_id = module.vpc.public_subnet_ids[1]
   vpc_id = module.vpc.vpc_id
+}
+
+# Reference the time_sleep from the module
+resource "time_sleep" "wait_for_elasticsearch" {
+  depends_on = [module.elasti_search]
+  create_duration = "60s"
 }
