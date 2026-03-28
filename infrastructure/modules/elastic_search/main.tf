@@ -63,30 +63,24 @@ resource "aws_instance" "elasticsearch" {
     Name = "elasticsearch-node"
   }
 
-  # user_data = <<-EOF
-  #             #!/bin/bash
-  #             set -eux
+  user_data = <<-EOF
+               #!/bin/bash
+               set -eux
 
-  #             apt-get update -y
-  #             apt-get install -y openjdk-11-jdk wget apt-transport-https curl gnupg
+               apt-get update -y
 
-  #             wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
-  #             echo "deb https://artifacts.elastic.co/packages/8.x/apt stable main" > /etc/apt/sources.list.d/elastic-8.x.list
+               wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
+               apt-get install apt-transport-https
+               echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/9.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-9.x.list
+               apt-get update -y && apt-get install elasticsearch -y
 
-  #             apt-get update -y
-  #             apt-get install -y elasticsearch
+               sed -i 's/^#network.host:.*/network.host: 0.0.0.0/' /etc/elasticsearch/elasticsearch.yml
+               sed -i 's/^#transport.host:.*/transport.host: 0.0.0.0/' /etc/elasticsearch/elasticsearch.yml
 
-  #             # CLEAN CONFIG (no security issues)
-  #             cat <<EOL > /etc/elasticsearch/elasticsearch.yml
-  #             network.host: 0.0.0.0
-  #             http.port: 9200
-  #             cluster.name: logging-cluster
-  #             node.name: es-node-1
-  #             xpack.security.enabled: false
-  #             EOL
+               systemctl daemon-reload
+               systemctl enable elasticsearch.service
 
-  #             systemctl daemon-reexec
-  #             systemctl enable elasticsearch
-  #             systemctl restart elasticsearch
-  #             EOF
+               systemctl start elasticsearch.service
+
+               EOF
 }
