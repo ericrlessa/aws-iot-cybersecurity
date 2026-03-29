@@ -12,7 +12,13 @@ def main():
     temperature = sensor.temperature
     humidity = sensor.relative_humidity
             
-    logging.info(f"Sensor reading successful: Temperature={temperature:.2f}°C, Humidity={humidity:.2f}%")
+    logging.info("")
+    logging.info(f"\tTemperature = {temperature:.2f}°C")
+    logging.info(f"\tHumidity    = {humidity:.2f}%")
+    logging.info("")
+
+    logging.info("Sensor read successfully!")
+    
 
 if __name__ == "__main__":
     main()
