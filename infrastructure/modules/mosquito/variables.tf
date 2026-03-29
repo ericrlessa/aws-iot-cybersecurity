@@ -36,3 +36,10 @@ variable "elasticsearch_ip" {
   description = "Private IP of Elasticsearch instance"
 }
 
+variable "kibana_ip" {
+  type        = string
+  description = "Private IP of Kibana instance"
+}
+
+
+

@@ -44,6 +44,8 @@ resource "aws_instance" "mosquitto" {
   key_name                    = var.key_name
   vpc_security_group_ids      = [aws_security_group.access_sg.id]
   associate_public_ip_address = true
+  iam_instance_profile = aws_iam_instance_profile.mosquitto_profile.name
+
 
   tags = {
     Name = "mosquitto-server"
@@ -125,11 +127,102 @@ resource "aws_instance" "mosquitto" {
             # Install Filebeat
             # -----------------------------
             curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-9.3.2-amd64.deb
-            dpkg -i filebeat-9.3.2-amd64.deb || apt-get install -f -y
+            dpkg -i filebeat-9.3.2-amd64.deb || apt-get install -f -y           
             
 
             systemctl enable filebeat
-            systemctl restart filebeat
+
+            filebeat modules enable suricata
+
+            # Wait a moment to ensure the file is created
+            sleep 2
+
+
+            ELASTIC_PASSWORD=$(aws secretsmanager get-secret-value \
+                            --secret-id "elasticsearch/elastic_password" \
+                            --query 'SecretString' \
+                            --region ${var.region} \
+                            --output text | jq -r '.password')
+
+            # Enable the module
+            sed -i "s/enabled: false/enabled: true/g" /etc/filebeat/modules.d/suricata.yml
+
+            # Uncomment and set the path (replace the commented line)
+            sed -i "s|#var.paths:|var.paths: [\"/var/log/suricata/eve.json\"]|g" /etc/filebeat/modules.d/suricata.yml
+
+            # Change host from localhost to Elasticsearch server
+            sed -i "s|hosts: \['localhost:9200'\]|hosts: ['https://${var.elasticsearch_ip}:9200']|g" /etc/filebeat/filebeat.yml
+
+            # Uncomment and set protocol to https
+            sed -i 's|#protocol: "https"|protocol: "https"|g' /etc/filebeat/filebeat.yml
+
+            # Uncomment username line
+            sed -i 's|#username: "elastic"|username: "elastic"|g' /etc/filebeat/filebeat.yml
+
+            # Uncomment password line and set the password (USE DOUBLE QUOTES!)
+            sed -i "s|#password: \"changeme\"|password: \"$ELASTIC_PASSWORD\"|g" /etc/filebeat/filebeat.yml
+
+            # Add SSL verification mode (USE DOUBLE QUOTES!)
+            sed -i "/password: \"$ELASTIC_PASSWORD\"/a\  ssl.verification_mode: none" /etc/filebeat/filebeat.yml
+
+            # Change Kibana hosts (USE DOUBLE QUOTES!)
+            sed -i "s|hosts: \['localhost:5601'\]|hosts: ['http://${var.kibana_ip}:5601']|g" /etc/filebeat/filebeat.yml
+
+            systemctl start filebeat
+
+            # Run setup to load dashboards and pipelines
+            echo "Running Filebeat setup..."
+            filebeat setup -e 2>&1 | tee /var/log/filebeat-setup.log
 
             EOF
 }
+
+resource "aws_iam_role" "mosquitto_role" {
+  name = "mosquitto-role"
+  
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# Minimal Secrets Manager policy (only create-secret)
+resource "aws_iam_policy" "mosquitto_secrets" {
+  name        = "mosquitto-secrets-policy"
+  description = "Allow mosquitto to get mosquitto_password secret"
+  
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Attach the policy to the role
+resource "aws_iam_role_policy_attachment" "mosquitto_secrets" {
+  role       = aws_iam_role.mosquitto_role.name
+  policy_arn = aws_iam_policy.mosquitto_secrets.arn
+}
+
+# IAM Instance Profile
+resource "aws_iam_instance_profile" "mosquitto_profile" {
+  name = "mosquitto-instance-profile"
+  role = aws_iam_role.mosquitto_role.name
+}
+

@@ -52,9 +52,10 @@ module "kibana" {
 
 module "mosquito" {
   source = "./modules/mosquito"
-  depends_on = [ module.vpc, module.elasti_search ]
+  depends_on = [ module.vpc, module.elasti_search, time_sleep.wait_for_elasticsearch ]
   key_name = var.key_name
   elasticsearch_ip = module.elasti_search.elasticsearch_private_ip
+  kibana_ip = module.kibana.kibana_private_ip
   public_subnet_id = module.vpc.public_subnet_ids[1]
   vpc_id = module.vpc.vpc_id
 }
@@ -62,5 +63,5 @@ module "mosquito" {
 # Reference the time_sleep from the module
 resource "time_sleep" "wait_for_elasticsearch" {
   depends_on = [module.elasti_search]
-  create_duration = "60s"
+  create_duration = "120s"
 }
