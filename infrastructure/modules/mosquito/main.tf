@@ -57,6 +57,8 @@ resource "aws_instance" "mosquitto" {
 
             apt-get update -y
 
+            apt-get install -y awscli
+
             # -----------------------------
             # Install Mosquitto
             # -----------------------------
@@ -151,7 +153,7 @@ resource "aws_instance" "mosquitto" {
             sed -i "s|#var.paths:|var.paths: [\"/var/log/suricata/eve.json\"]|g" /etc/filebeat/modules.d/suricata.yml
 
             # Change host from localhost to Elasticsearch server
-            sed -i "s|hosts: \['localhost:9200'\]|hosts: ['https://${var.elasticsearch_ip}:9200']|g" /etc/filebeat/filebeat.yml
+            sed -i 's|hosts: \["localhost:9200"\]|hosts: ["https://${var.elasticsearch_ip}:9200"]|' /etc/filebeat/filebeat.yml
 
             # Uncomment and set protocol to https
             sed -i 's|#protocol: "https"|protocol: "https"|g' /etc/filebeat/filebeat.yml
@@ -166,7 +168,8 @@ resource "aws_instance" "mosquitto" {
             sed -i "/password: \"$ELASTIC_PASSWORD\"/a\  ssl.verification_mode: none" /etc/filebeat/filebeat.yml
 
             # Change Kibana hosts (USE DOUBLE QUOTES!)
-            sed -i "s|hosts: \['localhost:5601'\]|hosts: ['http://${var.kibana_ip}:5601']|g" /etc/filebeat/filebeat.yml
+            sed -i 's|#host: "localhost:5601"|host: "http://${var.kibana_ip}:5601"|' /etc/filebeat/filebeat.yml
+            
 
             systemctl start filebeat
 
