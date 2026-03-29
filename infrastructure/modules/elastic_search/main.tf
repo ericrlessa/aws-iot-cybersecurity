@@ -69,28 +69,6 @@ resource "aws_instance" "elasticsearch" {
               #!/bin/bash
               set -eux
 
-              # Wait for network to be ready
-              echo "Waiting for network..."
-              for i in {1..30}; do
-                  if curl -s --max-time 2 http://169.254.169.254/latest/meta-data/ > /dev/null; then
-                      echo "Network ready"
-                      break
-                  fi
-                  echo "Attempt $i/30: Waiting for network..."
-                  sleep 2
-              done
-
-              # Wait for DNS resolution
-              echo "Waiting for DNS..."
-              for i in {1..30}; do
-                  if nslookup security.ubuntu.com > /dev/null 2>&1; then
-                      echo "DNS ready"
-                      break
-                  fi
-                  echo "Attempt $i/30: Waiting for DNS..."
-                  sleep 2
-              done
-
               wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
               apt-get install apt-transport-https
               echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/9.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-9.x.list
