@@ -149,7 +149,7 @@ resource "aws_instance" "mosquitto" {
             # Enable the module
             sed -i "s/enabled: false/enabled: true/g" /etc/filebeat/modules.d/suricata.yml
 
-            # Uncomment and set the path (replace the commented line)
+            # Uncomment and set the path
             sed -i "s|#var.paths:|var.paths: [\"/var/log/suricata/eve.json\"]|g" /etc/filebeat/modules.d/suricata.yml
 
             # Change host from localhost to Elasticsearch server
@@ -161,13 +161,13 @@ resource "aws_instance" "mosquitto" {
             # Uncomment username line
             sed -i 's|#username: "elastic"|username: "elastic"|g' /etc/filebeat/filebeat.yml
 
-            # Uncomment password line and set the password (USE DOUBLE QUOTES!)
+            # Uncomment password line and set the password
             sed -i "s|#password: \"changeme\"|password: \"$ELASTIC_PASSWORD\"|g" /etc/filebeat/filebeat.yml
 
-            # Add SSL verification mode (USE DOUBLE QUOTES!)
+            # Add SSL verification mode
             sed -i "/password: \"$ELASTIC_PASSWORD\"/a\  ssl.verification_mode: none" /etc/filebeat/filebeat.yml
 
-            # Change Kibana hosts (USE DOUBLE QUOTES!)
+            # Change Kibana hosts
             sed -i 's|#host: "localhost:5601"|host: "http://${var.kibana_ip}:5601"|' /etc/filebeat/filebeat.yml
             
 
