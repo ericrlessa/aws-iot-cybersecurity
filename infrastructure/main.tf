@@ -25,6 +25,8 @@ terraform {
 module "vpc" {
   source = "./modules/vpc"
   region = var.region
+  bucket_vpc_flow_logs_arn = var.bucket_vpc_flow_logs_arn
+  bucket_vpc_flow_logs_name = var.bucket_vpc_flow_logs_name
 }
 
 module "thing" {
@@ -63,5 +65,5 @@ module "mosquito" {
 # Reference the time_sleep from the module
 resource "time_sleep" "wait_for_elasticsearch" {
   depends_on = [module.elasti_search]
-  create_duration = "120s"
+  create_duration = "140s"
 }

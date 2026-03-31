@@ -120,3 +120,37 @@ resource "aws_route_table_association" "private_assoc" {
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
 }
+
+
+############### FLOW LOG VPC ######################
+
+resource "aws_flow_log" "vpc_flow_log" {
+  vpc_id = aws_vpc.that.id
+
+  log_destination      = var.bucket_vpc_flow_logs_arn
+  log_destination_type = "s3"
+
+  traffic_type = "ALL" # or ACCEPT / REJECT
+
+  tags = {
+    Name = "vpc-flow-logs"
+  }
+}
+
+resource "aws_s3_bucket_policy" "flow_logs_policy" {
+  bucket = var.bucket_vpc_flow_logs_name
+  
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "vpc-flow-logs.amazonaws.com"
+        }
+        Action = "s3:PutObject"
+        Resource = "${var.bucket_vpc_flow_logs_arn}/*"
+      }
+    ]
+  })
+}
