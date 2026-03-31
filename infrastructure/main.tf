@@ -92,5 +92,5 @@ resource "time_sleep" "wait_for_elasticsearch" {
 
 resource "time_sleep" "wait_for_kibana" {
   depends_on = [module.kibana]
-  create_duration = "10s"
+  create_duration = "25s"
 }
