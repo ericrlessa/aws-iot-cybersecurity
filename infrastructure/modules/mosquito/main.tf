@@ -229,3 +229,9 @@ resource "aws_iam_instance_profile" "mosquitto_profile" {
   role = aws_iam_role.mosquitto_role.name
 }
 
+# Register the Mosquitto instance with the target group
+resource "aws_lb_target_group_attachment" "mosquitto" {
+  target_group_arn =  var.target_group
+  target_id        = aws_instance.mosquitto.id
+  port             = 1883
+}

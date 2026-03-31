@@ -41,5 +41,9 @@ variable "kibana_ip" {
   description = "Private IP of Kibana instance"
 }
 
+variable "target_group" {
+  type        = string
+  description = "Load balance target group"
+}
 
 

@@ -54,12 +54,20 @@ module "kibana" {
 
 module "mosquito" {
   source = "./modules/mosquito"
-  depends_on = [ module.vpc, module.elasti_search, time_sleep.wait_for_elasticsearch ]
+  depends_on = [ module.vpc, module.elasti_search, module.loadbalance, time_sleep.wait_for_elasticsearch ]
   key_name = var.key_name
   elasticsearch_ip = module.elasti_search.elasticsearch_private_ip
   kibana_ip = module.kibana.kibana_private_ip
   public_subnet_id = module.vpc.public_subnet_ids[1]
   vpc_id = module.vpc.vpc_id
+  target_group = module.loadbalance.target_group_arn
+}
+
+module "loadbalance" {
+  source = "./modules/loadbalance"
+  depends_on = [ module.vpc ]
+  vpc_id = module.vpc.vpc_id
+  public_subnet_ids = module.vpc.public_subnet_ids 
 }
 
 # Reference the time_sleep from the module
