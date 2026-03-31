@@ -9,6 +9,11 @@ variable "subnet_id" {
   description = "subnet ID for Kibana instance"
 }
 
+variable "instance_name" {
+  description = "Unique name for this Mosquitto instance"
+  type        = string
+}
+
 variable "key_name" {
   type        = string
   description = "SSH key name"

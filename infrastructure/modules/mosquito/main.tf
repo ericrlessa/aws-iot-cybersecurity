@@ -9,7 +9,7 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_security_group" "access_sg" {
-  name        = "mosquitto-sg"
+  name        = "mosquitto-sg-${var.instance_name}"
   description = "Allow Mosquitto and SSH access"
   vpc_id      = var.vpc_id
 
@@ -47,8 +47,8 @@ resource "aws_instance" "mosquitto" {
   iam_instance_profile = aws_iam_instance_profile.mosquitto_profile.name
 
 
-  tags = {
-    Name = "mosquitto-server"
+   tags = {
+    Name = var.instance_name  # Use variable instead of hardcoded value
   }
 
   user_data = <<-EOF
@@ -181,7 +181,7 @@ resource "aws_instance" "mosquitto" {
 }
 
 resource "aws_iam_role" "mosquitto_role" {
-  name = "mosquitto-role"
+  name = "mosquitto-role-${var.instance_name}"
   
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -199,7 +199,7 @@ resource "aws_iam_role" "mosquitto_role" {
 
 # Minimal Secrets Manager policy (only create-secret)
 resource "aws_iam_policy" "mosquitto_secrets" {
-  name        = "mosquitto-secrets-policy"
+  name        = "mosquitto-secrets-policy-${var.instance_name}"
   description = "Allow mosquitto to get mosquitto_password secret"
   
   policy = jsonencode({
@@ -225,7 +225,7 @@ resource "aws_iam_role_policy_attachment" "mosquitto_secrets" {
 
 # IAM Instance Profile
 resource "aws_iam_instance_profile" "mosquitto_profile" {
-  name = "mosquitto-instance-profile"
+  name = "mosquitto-instance-profile-${var.instance_name}"
   role = aws_iam_role.mosquitto_role.name
 }
 

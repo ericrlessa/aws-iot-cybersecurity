@@ -52,9 +52,10 @@ module "kibana" {
   vpc_id = module.vpc.vpc_id
 }
 
-module "mosquito" {
+module "mosquito-1" {
   source = "./modules/mosquito"
-  depends_on = [ module.vpc, module.elasti_search, module.loadbalance, time_sleep.wait_for_elasticsearch ]
+  depends_on = [ module.vpc, module.elasti_search, module.loadbalance, time_sleep.wait_for_elasticsearch, time_sleep.wait_for_kibana ]
+  instance_name = "mosquitto-1"
   key_name = var.key_name
   elasticsearch_ip = module.elasti_search.elasticsearch_private_ip
   kibana_ip = module.kibana.kibana_private_ip
@@ -62,6 +63,19 @@ module "mosquito" {
   vpc_id = module.vpc.vpc_id
   target_group = module.loadbalance.target_group_arn
 }
+
+module "mosquito-2" {
+  source = "./modules/mosquito"
+  depends_on = [ module.vpc, module.elasti_search, module.loadbalance, time_sleep.wait_for_elasticsearch, time_sleep.wait_for_kibana ]
+  instance_name = "mosquitto-2"
+  key_name = var.key_name
+  elasticsearch_ip = module.elasti_search.elasticsearch_private_ip
+  kibana_ip = module.kibana.kibana_private_ip
+  subnet_id = module.vpc.private_subnet_ids[1]
+  vpc_id = module.vpc.vpc_id
+  target_group = module.loadbalance.target_group_arn
+}
+
 
 module "loadbalance" {
   source = "./modules/loadbalance"
@@ -74,4 +88,9 @@ module "loadbalance" {
 resource "time_sleep" "wait_for_elasticsearch" {
   depends_on = [module.elasti_search]
   create_duration = "140s"
+}
+
+resource "time_sleep" "wait_for_kibana" {
+  depends_on = [module.kibana]
+  create_duration = "10s"
 }
