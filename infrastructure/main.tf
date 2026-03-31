@@ -58,7 +58,7 @@ module "mosquito" {
   key_name = var.key_name
   elasticsearch_ip = module.elasti_search.elasticsearch_private_ip
   kibana_ip = module.kibana.kibana_private_ip
-  public_subnet_id = module.vpc.public_subnet_ids[1]
+  subnet_id = module.vpc.private_subnet_ids[1]
   vpc_id = module.vpc.vpc_id
   target_group = module.loadbalance.target_group_arn
 }

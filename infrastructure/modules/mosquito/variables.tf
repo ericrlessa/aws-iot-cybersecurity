@@ -4,9 +4,9 @@ variable "vpc_id" {
   description = "VPC ID"
 }
 
-variable "public_subnet_id" {
+variable "subnet_id" {
   type        = string
-  description = "Public subnet ID for Kibana instance"
+  description = "subnet ID for Kibana instance"
 }
 
 variable "key_name" {

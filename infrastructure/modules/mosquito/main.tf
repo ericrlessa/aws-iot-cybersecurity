@@ -40,10 +40,10 @@ resource "aws_security_group" "access_sg" {
 resource "aws_instance" "mosquitto" {
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
-  subnet_id                   = var.public_subnet_id
+  subnet_id                   = var.subnet_id
   key_name                    = var.key_name
   vpc_security_group_ids      = [aws_security_group.access_sg.id]
-  associate_public_ip_address = true
+  associate_public_ip_address = false
   iam_instance_profile = aws_iam_instance_profile.mosquitto_profile.name
 
 
